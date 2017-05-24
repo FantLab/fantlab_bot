@@ -115,8 +115,22 @@ def callback_inline(call):
 	except Exception as e:
 		print '\nFailed: ' + call.data
 		print str(e) + "\n"
+		traceback_error_string=traceback.format_exc()
+		with open("Error.Log", "a") as myfile:
+			myfile.write("\r\n\r\n" + time.strftime("%c")+"\r\n<<ERROR polling>>\r\n"+ traceback_error_string + "\r\n<<ERROR polling>>")
 		traceback.print_exc(file=sys.stdout)
 		bot.send_message(call.message.chat.id, texts.botErrorText)
 
-if __name__ == '__main__':
-	bot.polling(none_stop = True)
+def telegram_polling(): #TODO: test!
+	try:
+		bot.polling(none_stop=True, timeout = 60) #constantly get messages from Telegram
+	except:
+		traceback_error_string=traceback.format_exc()
+		with open("Error.Log", "a") as myfile:
+			myfile.write("\r\n\r\n" + time.strftime("%c")+"\r\n<<ERROR polling>>\r\n"+ traceback_error_string + "\r\n<<ERROR polling>>")
+		bot.stop_polling()
+		time.sleep(10)
+		telegram_polling()
+
+if __name__ == '__main__':    
+	telegram_polling()
