@@ -8,7 +8,9 @@ import random
 import re
 import texts
 import sys, traceback
-import telegram_token
+import telegram_token #файл с токеном
+
+errorfile = "Error.log"
 
 token = telegram_token.token
 
@@ -24,7 +26,6 @@ requestData = None
 
 def initData():
 	random.seed()
-	#print random.randint(3, 50)
 	global requestStep
 	global additionalRequestText
 	global requestData
@@ -71,6 +72,10 @@ def showResult(message):
 	result = cols[0].getText(separator = u' ')
 	result = re.sub(r"^\d+\. ", "", result)
 	result = re.sub(' +',' ', result) 
+	href = cols[0].findAll('a')[0]['href']
+	print href
+	href = "https://fantlab.ru" + re.findall("/work.*|$", href)[0]
+	result = result + "\n" + href
 	print result
 	keyboard = types.InlineKeyboardMarkup()
 	button1 = types.InlineKeyboardButton(text = texts.iwantmoreText, callback_data = "wantanotherbook")
@@ -116,8 +121,8 @@ def callback_inline(call):
 		print '\nFailed: ' + call.data
 		print str(e) + "\n"
 		traceback_error_string=traceback.format_exc()
-		with open("Error.Log", "a") as myfile:
-			myfile.write("\r\n\r\n" + time.strftime("%c")+"\r\n<<ERROR polling>>\r\n"+ traceback_error_string + "\r\n<<ERROR polling>>")
+		with open(errorfile, "a") as myfile:
+			myfile.write("\r\n\r\n" + time.strftime("%c")+"\r\n<<ERROR>>\r\n"+ traceback_error_string + "\r\n<<ERROR>>")
 		traceback.print_exc(file=sys.stdout)
 		bot.send_message(call.message.chat.id, texts.botErrorText)
 
@@ -126,7 +131,7 @@ def telegram_polling(): #TODO: test!
 		bot.polling(none_stop=True, timeout = 60) #constantly get messages from Telegram
 	except:
 		traceback_error_string=traceback.format_exc()
-		with open("Error.Log", "a") as myfile:
+		with open(errorfile, "a") as myfile:
 			myfile.write("\r\n\r\n" + time.strftime("%c")+"\r\n<<ERROR polling>>\r\n"+ traceback_error_string + "\r\n<<ERROR polling>>")
 		bot.stop_polling()
 		time.sleep(10)
