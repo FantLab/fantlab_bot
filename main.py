@@ -8,6 +8,7 @@ import random
 import re
 import texts
 import sys, traceback
+import time
 import telegram_token #файл с токеном
 
 errorfile = "Error.log"
