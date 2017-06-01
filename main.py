@@ -9,9 +9,21 @@ import re
 import texts
 import sys, traceback
 import time
+import sqlite3
 import telegram_token #файл с токеном
 
 errorfile = "Error.log"
+dbfile = 'data.db'
+
+class Userdata:
+	def __init__(self, request_step, request_string, request_data):
+		self.request_step = request_step
+		self.request_string = request_string
+		self.request_data = request_data
+		
+users = {}
+
+#conn = sqlite3.connect(dbfile) #TODO: add database
 
 token = telegram_token.token
 
@@ -88,6 +100,7 @@ def showResult(message):
 @bot.message_handler(content_types=["text"])
 def message_handler(message):
 	messageChatId = message.chat.id
+	print message.from_user.id, messageChatId
 	messageText = message.text
 	if messageText == '/start':
 		startFunc(message)
