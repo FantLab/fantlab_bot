@@ -1,3 +1,4 @@
 telegram_token.py
 *.pyc
 *.log
+*.txt
