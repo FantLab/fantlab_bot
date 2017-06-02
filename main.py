@@ -7,12 +7,12 @@ from BeautifulSoup import BeautifulSoup #pip install BeautifulSoup
 import random
 import re
 import texts
+import atexit
 import sys, traceback
 import time
-import sqlite3
 import telegram_token #файл с токеном
-
-dbfile = 'data.db'
+from bot_log import log
+import bot_database as db
 
 class Userdata:
 	def __init__(self, request_step, request_string, request_data):
@@ -20,42 +20,36 @@ class Userdata:
 		self.request_string = request_string
 		self.request_data = request_data
 
-class Log:
-	logfile = "log.txt"
-	def __init__(self, filename):
-		self.logfile = filename 
-
-	def debug(self, string):
-		print string
-		with open(self.logfile, "a") as myfile:
-			myfile.write(string.encode('utf8') + "\r\n")
-
-	def error(self, string):
-		print string
-		with open(self.logfile, "a") as myfile:
-			myfile.write("\r\n\r\n" + time.strftime("%c")+"\r\n<<ERROR>>\r\n"+ string.encode('utf8') + "\r\n<<ERROR>>")
-
-log = Log("log.txt")
-		
 users = {}
 
-#conn = sqlite3.connect(dbfile) #TODO: add database
+def start_function(): #init database and load users
+	db.init_db()
+	res = db.get_alldata()
+	for obj in res:
+		users[obj[0]] = Userdata(obj[1], obj[2], None)
 
-token = telegram_token.token
-
-bot = telebot.TeleBot(token)
+def exit_function():
+	log.debug('Saving database, please wait.')
+	for u in users:
+		db.set_userdata(u, users[u]) #update database
+	log.debug('Saved! Thank you for using this bot.')
+	
+start_function()
+atexit.register(exit_function) # call this func on program exit
+		
+bot = telebot.TeleBot(telegram_token.token)
 
 requestBasicText = 'https://fantlab.ru/bygenre?'
 
 logicalorrequest = '&logicalor=on' # ИЛИ вместо И
 
 def initData(chat_id):
-	users[chat_id] = Userdata(0, "", None) 
+	users[chat_id] = Userdata(0, "", None)
 	random.seed()
 
 def startFunc(message):
 	messageChatId = message.chat.id
-	users[messageChatId] = Userdata(0, "", None) #init data
+	initData(messageChatId)
 	keyboard = types.InlineKeyboardMarkup()
 	startButton = types.InlineKeyboardButton(text = texts.showRecomendsText, callback_data = "/book")
 	keyboard.add(startButton)
@@ -153,7 +147,7 @@ def callback_inline(call):
 		log.error(traceback.format_exc())
 		bot.send_message(call.message.chat.id, texts.botErrorText)
 
-def telegram_polling(): #TODO: test!
+def telegram_polling():
 	try:
 		bot.polling(none_stop=True, timeout = 60) #constantly get messages from Telegram
 	except:
