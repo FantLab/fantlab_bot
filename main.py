@@ -61,7 +61,7 @@ def recomendationFunc(message):
 		users[messageChatId] = Userdata(0, "", None) 
 	keyboard = types.InlineKeyboardMarkup()
 	for i in texts.requestStepsArray[users[messageChatId].request_step]:
-		keyboard.add(types.InlineKeyboardButton(text = i[0], callback_data = i[1]))
+		keyboard.add(types.InlineKeyboardButton(text = i[0], callback_data = i[1] + " " + str(i[2])))
 	bot.send_message(messageChatId, texts.requestNamesArray[users[messageChatId].request_step], reply_markup = keyboard)
 	users[messageChatId].request_step += 1
 	
@@ -116,9 +116,9 @@ def message_handler(message):
 		else:
 			startFunc(message)
 	except Exception as e:
-		log.debug('\nFailed: ' + call.data + "\r\n" + str(e) + "\r\n")
+		log.debug('\nFailed: ' + messageText + "\r\n" + str(e) + "\r\n")
 		log.error(traceback.format_exc())
-		bot.send_message(call.message.chat.id, texts.botErrorText)
+		bot.send_message(messageChatId, texts.botErrorText)
 		
 @bot.callback_query_handler(func = lambda call: True)
 def callback_inline(call):
@@ -132,14 +132,19 @@ def callback_inline(call):
 			elif call.data == 'wantanotherbook':
 				showResult(call.message)
 			else:
+				data = call.data.split(' ') 
 				if not messageChatId in users:
-					users[messageChatId] = Userdata(0, "", None) 
+					users[messageChatId] = Userdata(0, "", None)
 				if users[messageChatId].request_step >= len(texts.requestStepsArray):
 					bot.send_message(call.message.chat.id, texts.pleaseWaitText)
 					showResult(call.message)
 					return
-				if call.data != 'NONE': #собираем строку запроса
-					users[messageChatId].request_string += call.data
+				if users[messageChatId].request_step != int(data[1]) + 1:
+					users[messageChatId].request_step -= 1
+					recomendationFunc(call.message)
+					return
+				if data[0] != 'NONE': #собираем строку запроса
+					users[messageChatId].request_string += data[0]
 				log.debug(str(messageChatId) + " " + users[messageChatId].request_string)
 				recomendationFunc(call.message)
 	except Exception as e:

@@ -16,6 +16,6 @@ class Log:
 	def error(self, string):
 		print string
 		with open(self.logfile, "a") as myfile:
-			myfile.write("\r\n\r\n" + time.strftime("%c")+"\r\n<<ERROR>>\r\n"+ string.encode('utf8') + "\r\n<<ERROR>>")
+			myfile.write("\r\n" + time.strftime("%c")+"\r\n<<ERROR>>\r\n"+ string.encode('utf8') + "\r\n<<ERROR>>\r\n")
 
 log = Log("log.txt")
