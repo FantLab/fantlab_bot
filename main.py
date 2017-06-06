@@ -72,9 +72,6 @@ def getData(request):
 	table = soup.find('table')
 	rows = table.findAll('tr')
 	return rows
-	index = random.randint(3, len(rows) - 1)
-	cols = rows[index].findAll('td')
-	return rows
 
 def showResult(message):
 	messageChatId = message.chat.id
@@ -85,10 +82,17 @@ def showResult(message):
 			users[messageChatId].request_string = texts.fixRequestString
 		users[messageChatId].request_data = getData(requestBasicText + users[messageChatId].request_string + logicalorrequest)
 	index = random.randint(3, len(users[messageChatId].request_data) - 1)
+	
+	#print users[messageChatId].request_data[1].findAll('td')[0].getText(separator = u' ') #TODO: load pages
+	
 	cols = users[messageChatId].request_data[index].findAll('td')
 	result = cols[0].getText(separator = u' ')
 	result = re.sub(r"^\d+\. ", "", result)
-	result = re.sub(' +',' ', result) 
+	result = re.sub(' +',' ', result)
+	
+	myre = re.compile(u'(\u00AB.*\u00BB)', re.UNICODE)
+	result = myre.sub(r'*\1*', result)
+	
 	href = cols[0].findAll('a')[0]['href']
 	href = "https://fantlab.ru" + re.findall("/work.*|$", href)[0]
 	result = result + "\n" + href
@@ -98,7 +102,8 @@ def showResult(message):
 	button2 = types.InlineKeyboardButton(text = texts.startagainText, callback_data = "/book")
 	keyboard.add(button1)
 	keyboard.add(button2)
-	bot.send_message(message.chat.id, result.encode('utf-8'), reply_markup = keyboard)
+	#bot.send_message(messageChatId, "<b>bold</b>, <strong>bold</strong>", )
+	bot.send_message(message.chat.id, result.encode('utf-8'), reply_markup = keyboard, parse_mode="Markdown")
 
 @bot.message_handler(content_types=["text"])
 def message_handler(message):
