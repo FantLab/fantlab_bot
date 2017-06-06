@@ -19,8 +19,12 @@ class Userdata:
 		self.request_step = request_step
 		self.request_string = request_string
 		self.request_data = request_data
+		self.current_page = 1
+		self.current_samepage_count = 0
 
 users = {}
+
+max_samepage_count = 7
 
 def start_function(): #init database and load users
 	db.init_db()
@@ -76,14 +80,18 @@ def getData(request):
 def showResult(message):
 	messageChatId = message.chat.id
 	if not messageChatId in users:
-		users[messageChatId] = Userdata(0, "", None) 
-	if users[messageChatId].request_data == None:
+		users[messageChatId] = Userdata(0, "", None)
+	flag = False
+	if users[messageChatId].current_samepage_count == max_samepage_count:
+		bot.send_message(message.chat.id, texts.pleaseWaitTheSameText)
+		users[messageChatId].current_samepage_count = 0
+		users[messageChatId].current_page += 1
+		flag = True
+	if users[messageChatId].request_data == None or flag:
 		if users[messageChatId].request_string == "":
 			users[messageChatId].request_string = texts.fixRequestString
-		users[messageChatId].request_data = getData(requestBasicText + users[messageChatId].request_string + logicalorrequest)
+		users[messageChatId].request_data = getData(requestBasicText + users[messageChatId].request_string + logicalorrequest + "&page=" + str(users[messageChatId].current_page))
 	index = random.randint(3, len(users[messageChatId].request_data) - 1)
-	
-	#print users[messageChatId].request_data[1].findAll('td')[0].getText(separator = u' ') #TODO: load pages
 	
 	cols = users[messageChatId].request_data[index].findAll('td')
 	result = cols[0].getText(separator = u' ')
@@ -102,7 +110,6 @@ def showResult(message):
 	button2 = types.InlineKeyboardButton(text = texts.startagainText, callback_data = "/book")
 	keyboard.add(button1)
 	keyboard.add(button2)
-	#bot.send_message(messageChatId, "<b>bold</b>, <strong>bold</strong>", )
 	bot.send_message(message.chat.id, result.encode('utf-8'), reply_markup = keyboard, parse_mode="Markdown")
 
 @bot.message_handler(content_types=["text"])
@@ -131,15 +138,16 @@ def callback_inline(call):
 		if call.message:
 			log.debug(call.message.text + " " + call.data)
 			messageChatId = call.message.chat.id
+			if not messageChatId in users:
+				users[messageChatId] = Userdata(0, "", None)
 			if call.data == '/book':
 				initData(messageChatId)
 				recomendationFunc(call.message)
 			elif call.data == 'wantanotherbook':
+				users[messageChatId].current_samepage_count += 1
 				showResult(call.message)
 			else:
 				data = call.data.split(' ') 
-				if not messageChatId in users:
-					users[messageChatId] = Userdata(0, "", None)
 				if users[messageChatId].request_step >= len(texts.requestStepsArray):
 					bot.send_message(call.message.chat.id, texts.pleaseWaitText)
 					showResult(call.message)
