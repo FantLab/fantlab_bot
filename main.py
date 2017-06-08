@@ -46,6 +46,7 @@ bot = telebot.TeleBot(telegram_token.token)
 requestBasicText = 'https://fantlab.ru/bygenre?'
 
 logicalorrequest = '&logicalor=on' # ИЛИ вместо И
+allAgeRequest = "&wg106=on"
 
 def initData(chat_id):
 	users[chat_id] = Userdata(0, "", None)
@@ -74,6 +75,10 @@ def getData(request):
 	log.debug(request)
 	soup = BeautifulSoup(urllib2.urlopen(request).read())
 	table = soup.find('table')
+	if table is None:
+		request += allAgeRequest #add extra request to avoid none data
+		soup = BeautifulSoup(urllib2.urlopen(request).read())
+		table = soup.find('table')
 	rows = table.findAll('tr')
 	return rows
 
@@ -91,7 +96,7 @@ def showResult(message):
 		if users[messageChatId].request_string == "":
 			users[messageChatId].request_string = texts.fixRequestString
 		users[messageChatId].request_data = getData(requestBasicText + users[messageChatId].request_string + logicalorrequest + "&page=" + str(users[messageChatId].current_page))
-	index = random.randint(3, len(users[messageChatId].request_data) - 1)
+	index = random.randint(3, len(users[messageChatId].request_data) - 2)
 	
 	cols = users[messageChatId].request_data[index].findAll('td')
 	result = cols[0].getText(separator = u' ')
@@ -147,11 +152,7 @@ def callback_inline(call):
 				users[messageChatId].current_samepage_count += 1
 				showResult(call.message)
 			else:
-				data = call.data.split(' ') 
-				if users[messageChatId].request_step >= len(texts.requestStepsArray):
-					bot.send_message(call.message.chat.id, texts.pleaseWaitText)
-					showResult(call.message)
-					return
+				data = call.data.split(' ')
 				if users[messageChatId].request_step != int(data[1]) + 1:
 					users[messageChatId].request_step -= 1
 					recomendationFunc(call.message)
@@ -159,6 +160,10 @@ def callback_inline(call):
 				if data[0] != 'NONE': #собираем строку запроса
 					users[messageChatId].request_string += data[0]
 				log.debug(str(messageChatId) + " " + users[messageChatId].request_string)
+				if users[messageChatId].request_step >= len(texts.requestStepsArray):
+					bot.send_message(call.message.chat.id, texts.pleaseWaitText)
+					showResult(call.message)
+					return
 				recomendationFunc(call.message)
 	except Exception as e:
 		log.debug('\nFailed: ' + call.data + "\r\n" + str(e) + "\r\n")
