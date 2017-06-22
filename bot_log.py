@@ -11,7 +11,7 @@ class Log:
 	def debug(self, string):
 		print string
 		with open(self.logfile, "a") as myfile:
-			myfile.write(string.encode('utf8') + "\r\n")
+			myfile.write(time.strftime("%c") + ": " + string.encode('utf8') + "\r\n")
 
 	def error(self, string):
 		print string

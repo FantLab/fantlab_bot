@@ -15,8 +15,9 @@ from bot_log import log
 import bot_database as db
 
 class Userdata:
-	def __init__(self, request_step, request_string, request_data):
+	def __init__(self, username, request_step, request_string, request_data):
 		self.request_step = request_step
+		self.username = username
 		self.request_string = request_string
 		self.request_data = request_data
 		self.current_page = 1
@@ -26,17 +27,30 @@ users = {}
 
 max_samepage_count = 7
 
+def getUsername(chat):
+	result = ''
+	if chat.first_name:
+		result += chat.first_name + ' '
+	if chat.last_name:
+		result += chat.last_name + ' '
+	if chat.username:
+		if len(result) > 0:
+			result += "(" + chat.username + ")"
+		else:
+			result = chat.username
+	return result
+
 def start_function(): #init database and load users
 	db.init_db()
 	res = db.get_alldata()
 	for obj in res:
-		users[obj[0]] = Userdata(obj[1], obj[2], None)
+		users[obj[0]] = Userdata(obj[3], obj[1], obj[2], None)
 
 def exit_function():
 	log.debug('Saving database, please wait.')
 	for u in users:
 		db.set_userdata(u, users[u]) #update database
-	log.debug('Saved! Thank you for using this bot.')
+	log.debug('Saved! Thank you for using this bot.\n')
 	
 start_function()
 atexit.register(exit_function) # call this func on program exit
@@ -48,13 +62,13 @@ requestBasicText = 'https://fantlab.ru/bygenre?'
 logicalorrequest = '&logicalor=on' # ИЛИ вместо И
 allAgeRequest = "&wg106=on"
 
-def initData(chat_id):
-	users[chat_id] = Userdata(0, "", None)
+def initData(chat):
+	users[chat.id] = Userdata(getUsername(chat), 0, "", None)
 	random.seed()
 
 def startFunc(message):
 	messageChatId = message.chat.id
-	initData(messageChatId)
+	initData(message.chat)
 	keyboard = types.InlineKeyboardMarkup()
 	startButton = types.InlineKeyboardButton(text = texts.showRecomendsText, callback_data = "/book")
 	keyboard.add(startButton)
@@ -63,7 +77,7 @@ def startFunc(message):
 def recomendationFunc(message):
 	messageChatId = message.chat.id
 	if not messageChatId in users:
-		users[messageChatId] = Userdata(0, "", None) 
+		users[messageChatId] = Userdata(getUsername(message.chat), 0, "", None) 
 	keyboard = types.InlineKeyboardMarkup()
 	for i in texts.requestStepsArray[users[messageChatId].request_step]:
 		keyboard.add(types.InlineKeyboardButton(text = i[0], callback_data = i[1] + " " + str(i[2])))
@@ -72,7 +86,7 @@ def recomendationFunc(message):
 	
 def getData(request):
 	request = re.sub("\?&", "?", request)
-	log.debug(request)
+	log.debug("Request = " + request)
 	soup = BeautifulSoup(urllib2.urlopen(request).read())
 	table = soup.find('table')
 	if table is None:
@@ -85,7 +99,7 @@ def getData(request):
 def showResult(message):
 	messageChatId = message.chat.id
 	if not messageChatId in users:
-		users[messageChatId] = Userdata(0, "", None)
+		users[messageChatId] = Userdata(getUsername(message.chat), 0, "", None)
 	flag = False
 	if users[messageChatId].current_samepage_count == max_samepage_count:
 		bot.send_message(message.chat.id, texts.pleaseWaitTheSameText)
@@ -109,7 +123,7 @@ def showResult(message):
 	href = cols[0].findAll('a')[0]['href']
 	href = "https://fantlab.ru" + re.findall("/work.*|$", href)[0]
 	result = result + "\n" + href
-	log.debug(result)
+	log.debug("Result = " + result)
 	keyboard = types.InlineKeyboardMarkup()
 	button1 = types.InlineKeyboardButton(text = texts.iwantmoreText, callback_data = "wantanotherbook")
 	button2 = types.InlineKeyboardButton(text = texts.startagainText, callback_data = "/book")
@@ -122,17 +136,18 @@ def message_handler(message):
 	try: 
 		messageChatId = message.chat.id
 		messageText = message.text
-		log.debug(messageText)
+		log.debug("Message = " + str(messageChatId) + " " + messageText)
 		if messageText == '/start':
 			startFunc(message)
 		elif messageText == '/help':
 			bot.send_message(messageChatId, texts.helpText)
 		elif messageText == '/book':
-			initData(messageChatId)
+			initData(message.chat)
 			recomendationFunc(message)
 		else:
 			startFunc(message)
 	except Exception as e:
+		#TODO: forward messages when error happens: bot.forward_message(id, messageChatId, message.message_id)
 		log.debug('\nFailed: ' + messageText + "\r\n" + str(e) + "\r\n")
 		log.error(traceback.format_exc())
 		bot.send_message(messageChatId, texts.botErrorText)
@@ -141,12 +156,12 @@ def message_handler(message):
 def callback_inline(call):
 	try:
 		if call.message:
-			log.debug(call.message.text + " " + call.data)
+			log.debug("Callback = " + call.message.text + " " + call.data)
 			messageChatId = call.message.chat.id
 			if not messageChatId in users:
-				users[messageChatId] = Userdata(0, "", None)
+				users[messageChatId] = Userdata(getUsername(call.message.chat), 0, "", None)
 			if call.data == '/book':
-				initData(messageChatId)
+				initData(call.message.chat)
 				recomendationFunc(call.message)
 			elif call.data == 'wantanotherbook':
 				users[messageChatId].current_samepage_count += 1
@@ -159,7 +174,7 @@ def callback_inline(call):
 					return
 				if data[0] != 'NONE': #собираем строку запроса
 					users[messageChatId].request_string += data[0]
-				log.debug(str(messageChatId) + " " + users[messageChatId].request_string)
+				log.debug("Request string = " + str(messageChatId) + " " + users[messageChatId].request_string)
 				if users[messageChatId].request_step >= len(texts.requestStepsArray):
 					bot.send_message(call.message.chat.id, texts.pleaseWaitText)
 					showResult(call.message)
@@ -171,13 +186,16 @@ def callback_inline(call):
 		bot.send_message(call.message.chat.id, texts.botErrorText)
 
 def telegram_polling():
-	try:
-		bot.polling(none_stop=True, timeout = 60) #constantly get messages from Telegram
-	except:
-		log.error(traceback.format_exc())
-		bot.stop_polling()
-		time.sleep(10)
-		telegram_polling()
+	while True:
+		try:
+			bot.polling(none_stop=True, timeout = 60) #constantly get messages from Telegram
+			sys.exit() #ha-ha
+		except SystemExit: #handle sys.exit()
+			sys.exit()
+		except:
+			log.error(traceback.format_exc())
+			bot.stop_polling()
+			time.sleep(10)
 
 if __name__ == '__main__':    
 	telegram_polling()
