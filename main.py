@@ -10,9 +10,30 @@ import texts
 import atexit
 import sys, traceback
 import time
+import requests
+import threading
+from threading import Thread
+
 import telegram_token #файл с токеном
 from bot_log import log
 import bot_database as db
+
+#TODO list:
+	#Добиться стабильности работы
+	#Интерактивный путеводитель ТОП-100 - https://fantlab.ru/article792
+	#выдача книг только с высокой оценкой
+	#Было бы неплохо, если вопросы менялись - можно спрашивать: "вам для детей или что-нибудь посерьезнее"
+	#кнопка для связи с автором
+	#+/- для книг
+	#поиск по авторам - биографии
+	#более точный жанровый поиск - не 3-4 этапа, а реальности, миры, приключения и т.п. (как на самом сайте)
+	#/help (которого, кстати, нет в списке команд)
+	#история запросов
+
+def thread_save_database():
+	while True:
+		save_database()
+		time.sleep(300)
 
 class Userdata:
 	def __init__(self, username, request_step, request_string, request_data):
@@ -45,12 +66,16 @@ def start_function(): #init database and load users
 	res = db.get_alldata()
 	for obj in res:
 		users[obj[0]] = Userdata(obj[3], obj[1], obj[2], None)
-
-def exit_function():
+		
+def save_database():
 	log.debug('Saving database, please wait.')
 	for u in users:
 		db.set_userdata(u, users[u]) #update database
-	log.debug('Saved! Thank you for using this bot.\n')
+	log.debug('Saved!')
+
+def exit_function():
+	save_database()
+	log.debug('Thank you for using this bot. Bye!\n')
 	
 start_function()
 atexit.register(exit_function) # call this func on program exit
@@ -192,10 +217,17 @@ def telegram_polling():
 			sys.exit() #ha-ha
 		except SystemExit: #handle sys.exit()
 			sys.exit()
+		except requests.exceptions.ConnectionError:
+			save_database()
+			log.error("Network problem")
+			time.sleep(300)
 		except:
 			log.error(traceback.format_exc())
 			bot.stop_polling()
-			time.sleep(10)
+			time.sleep(60)
 
-if __name__ == '__main__':    
+if __name__ == '__main__':
+	t = threading.Thread(target = thread_save_database)
+	t.daemon = True #to kill this thread when main thread is killed
+	t.start()
 	telegram_polling()
