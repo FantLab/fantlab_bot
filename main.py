@@ -6,7 +6,6 @@ from telebot import types
 from BeautifulSoup import BeautifulSoup #pip install BeautifulSoup
 import random
 import re
-import texts
 import atexit
 import sys, traceback
 import time
@@ -15,12 +14,14 @@ import threading
 from threading import Thread
 
 import telegram_token #файл с токеном
+import texts
+from texts import top100questions
 from bot_log import log
 import bot_database as db
 
 #TODO list:
 	#Добиться стабильности работы
-	#Интерактивный путеводитель ТОП-100 - https://fantlab.ru/article792
+	#перенести часть функций из main.py в отдельные файлы
 	#выдача книг только с высокой оценкой
 	#Было бы неплохо, если вопросы менялись - можно спрашивать: "вам для детей или что-нибудь посерьезнее"
 	#кнопка для связи с автором
@@ -45,8 +46,33 @@ class Userdata:
 		self.current_samepage_count = 0
 
 users = {}
+top100indexes = {}
 
 max_samepage_count = 7
+
+def top100ArrayToString(index1, index2, array):
+	if len(array) == 2:
+		return str(array[1])
+	else:
+		return str(index1) + "\n" + str(index2)
+
+def top100Func(message):
+	messageChatId = message.chat.id
+	if not messageChatId in users:
+		users[messageChatId] = Userdata(getUsername(message.chat), 0, "", None) 
+	keyboard = types.InlineKeyboardMarkup()
+	localindex = top100indexes[messageChatId] - 1
+	k = 0
+	for i in top100questions[localindex][2]:
+		keyboard.add(types.InlineKeyboardButton(text = i[0], callback_data = "top100_goto\n" + top100ArrayToString(localindex, k, i)))
+		k += 1
+	keyboard.add(types.InlineKeyboardButton(text = texts.goback, callback_data = "top100_goback " + str(top100questions[localindex][1])))
+	bot.send_message(messageChatId, top100questions[localindex][0], reply_markup = keyboard)
+	
+def top100Result(messageChatId, index1, index2):
+	array = top100questions[index1][2][index2]
+	result = array[3] + " *" + array[2] + "*\nhttps://fantlab.ru/work" + array[1]
+	bot.send_message(messageChatId, result, parse_mode="Markdown")
 
 def getUsername(chat):
 	result = ''
@@ -89,6 +115,7 @@ allAgeRequest = "&wg106=on"
 
 def initData(chat):
 	users[chat.id] = Userdata(getUsername(chat), 0, "", None)
+	top100indexes[chat.id] = 1
 	random.seed()
 
 def startFunc(message):
@@ -96,7 +123,9 @@ def startFunc(message):
 	initData(message.chat)
 	keyboard = types.InlineKeyboardMarkup()
 	startButton = types.InlineKeyboardButton(text = texts.showRecomendsText, callback_data = "/book")
+	top100Button = types.InlineKeyboardButton(text = texts.showtop100Text, callback_data = "/top100")
 	keyboard.add(startButton)
+	keyboard.add(top100Button)
 	bot.send_message(messageChatId, texts.startText, reply_markup = keyboard)
 
 def recomendationFunc(message):
@@ -169,6 +198,9 @@ def message_handler(message):
 		elif messageText == '/book':
 			initData(message.chat)
 			recomendationFunc(message)
+		elif messageText == '/top100':
+			initData(message.chat)
+			top100Func(message)
 		else:
 			startFunc(message)
 	except Exception as e:
@@ -191,6 +223,24 @@ def callback_inline(call):
 			elif call.data == 'wantanotherbook':
 				users[messageChatId].current_samepage_count += 1
 				showResult(call.message)
+			elif call.data == '/top100':
+				initData(call.message.chat)
+				top100Func(call.message)
+			elif call.data.find("top100_goto") >= 0:
+				data = call.data.split('\n')
+				if len(data) == 2:
+					top100indexes[messageChatId] = int(data[1])
+					top100Func(call.message)
+				else:
+					top100Result(messageChatId, int(data[1]), int(data[2]))
+			elif call.data.find("top100_goback") >= 0:
+				data = call.data.split(' ')
+				if data[1] == '0':
+					top100indexes[messageChatId] = int(data[1])
+					startFunc(call.message)
+				else:
+					top100indexes[messageChatId] = int(data[1])
+					top100Func(call.message)
 			else:
 				data = call.data.split(' ')
 				if users[messageChatId].request_step != int(data[1]) + 1:
