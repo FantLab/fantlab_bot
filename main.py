@@ -28,7 +28,6 @@ import bot_database as db
 	#+/- для книг
 	#поиск по авторам - биографии
 	#более точный жанровый поиск - не 3-4 этапа, а реальности, миры, приключения и т.п. (как на самом сайте)
-	#/help (которого, кстати, нет в списке команд)
 	#история запросов
 
 def thread_save_database():
@@ -72,7 +71,11 @@ def top100Func(message):
 def top100Result(messageChatId, index1, index2):
 	array = top100questions[index1][2][index2]
 	result = array[3] + " *" + array[2] + "*\nhttps://fantlab.ru/work" + array[1]
-	bot.send_message(messageChatId, result, parse_mode="Markdown")
+	top100Button = types.InlineKeyboardButton(text = texts.showtop100AgainText, callback_data = "/top100")
+	keyboard = types.InlineKeyboardMarkup()
+	keyboard.add(top100Button)
+	
+	bot.send_message(messageChatId, result, reply_markup = keyboard, parse_mode="Markdown")
 
 def getUsername(chat):
 	result = ''
