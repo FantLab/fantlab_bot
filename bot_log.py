@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import sys, traceback
 import time
 
 class Log:
 	logfile = "log.txt"
 	def __init__(self, filename):
-		self.logfile = filename 
+		self.logfile = filename
 
 	def debug(self, string):
 		print string

@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import urllib2
-import telebot #pip install pytelegrambotapi
-from telebot import types
-from BeautifulSoup import BeautifulSoup #pip install BeautifulSoup
 import random
 import re
+import urllib2
+from telebot import types
+from BeautifulSoup import BeautifulSoup #pip install BeautifulSoup
 
 from data import bot, Userdata, users, max_samepage_count, requestBasicText, logicalorrequest, allAgeRequest, getUsername, top100indexes
 import texts
-from texts import top100questions
 from bot_log import log
 
 def initData(chat):

@@ -1,24 +1,22 @@
 # -*- coding: utf-8 -*-
 
 import atexit
-import sys, traceback
+import sys
+import traceback
 import time
-import requests
 import threading
-from threading import Thread
+import requests
 
-from data import bot, Userdata, users, max_samepage_count, requestBasicText, logicalorrequest, allAgeRequest, getUsername, top100indexes
-from recommendation import initData, startFunc, recomendationFunc, getData, showResult
+from data import bot, Userdata, users, getUsername, top100indexes
+from recommendation import initData, startFunc, recomendationFunc, showResult
 from top100 import top100Func, top100Result
 import texts
-from texts import top100questions
 from bot_log import log
 import bot_database as db
 
 #TODO list:
 	#Добиться стабильности работы
-	#перенести часть функций из main.py в отдельные файлы
-	#Было бы неплохо, если вопросы менялись - можно спрашивать: "вам для детей или что-нибудь посерьезнее"
+	#Неплохо, если бы вопросы менялись - можно спрашивать: "вам для детей или что-нибудь посерьезнее"
 	#выдача книг только с высокой оценкой, минимальная оценка регулируется пользователем;
 	#оценка книг (+/-) и сокрытие их из выдачи;
 	#поиск по авторам с выдачей биографий;
@@ -36,44 +34,44 @@ def start_function(): #init database and load users
 	res = db.get_alldata()
 	for obj in res:
 		users[obj[0]] = Userdata(obj[3], obj[1], obj[2], None)
-		
+
 def save_database():
 	log.debug('Saving database, please wait.')
-	for u in users:
-		db.set_userdata(u, users[u]) #update database
+	for user in users:
+		db.set_userdata(user, users[user]) #update database
 	log.debug('Saved!')
 
 def exit_function():
 	save_database()
 	log.debug('Thank you for using this bot. Bye!\n')
-	
+
 start_function()
 atexit.register(exit_function) # call this func on program exit
 
 @bot.message_handler(content_types=["text"])
 def message_handler(message):
-	try: 
-		messageChatId = message.chat.id
-		messageText = message.text
-		log.debug("Message = " + str(messageChatId) + " " + messageText)
-		if messageText == '/start':
+	try:
+		message_chat_id = message.chat.id
+		message_text = message.text
+		log.debug("Message = " + str(message_chat_id) + " " + message_text)
+		if message_text == '/start':
 			startFunc(message)
-		elif messageText == '/help':
-			bot.send_message(messageChatId, texts.helpText)
-		elif messageText == '/book':
+		elif message_text == '/help':
+			bot.send_message(message_chat_id, texts.helpText)
+		elif message_text == '/book':
 			initData(message.chat)
 			recomendationFunc(message)
-		elif messageText == '/top100':
+		elif message_text == '/top100':
 			initData(message.chat)
 			top100Func(message)
 		else:
 			startFunc(message)
 	except Exception as e:
 		#TODO: forward messages when error happens: bot.forward_message(id, messageChatId, message.message_id)
-		log.debug('\nFailed: ' + messageText + "\r\n" + str(e) + "\r\n")
+		log.debug('\nFailed: ' + message_text + "\r\n" + str(e) + "\r\n")
 		log.error(traceback.format_exc())
-		bot.send_message(messageChatId, texts.botErrorText)
-		
+		bot.send_message(message_text, texts.botErrorText)
+
 @bot.callback_query_handler(func = lambda call: True)
 def callback_inline(call):
 	try:
@@ -128,7 +126,7 @@ def callback_inline(call):
 def telegram_polling():
 	while True:
 		try:
-			bot.polling(none_stop=True, timeout = 60) #constantly get messages from Telegram
+			bot.polling(none_stop=True, timeout=60) #constantly get messages from Telegram
 			sys.exit() #ha-ha
 		except SystemExit: #handle sys.exit()
 			sys.exit()
@@ -142,7 +140,7 @@ def telegram_polling():
 			time.sleep(60)
 
 if __name__ == '__main__':
-	t = threading.Thread(target = thread_save_database)
+	t = threading.Thread(target=thread_save_database)
 	t.daemon = True #to kill this thread when main thread is killed
 	t.start()
 	telegram_polling()

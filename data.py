@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import telebot #pip install pytelegrambotapi
-from telebot import types
 import telegram_token #файл с токеном
 
 class Userdata:
