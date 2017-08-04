@@ -14,6 +14,7 @@ import texts
 from bot_log import log
 import bot_database as db
 
+#FIXME: Если бот выдал 3 одинаковых сообщения подряд, сбросить параметры разговора и вызвать функцию /start.
 #TODO list:
 	#Добиться стабильности работы
 	#Неплохо, если бы вопросы менялись - можно спрашивать: "вам для детей или что-нибудь посерьезнее"
@@ -67,24 +68,24 @@ def message_handler(message):
 		else:
 			startFunc(message)
 	except Exception as e:
-		#TODO: forward messages when error happens: bot.forward_message(id, messageChatId, message.message_id)
+		#TODO: forward messages when error happens: bot.forward_message(id, message_chat_id, message.message_id)
 		log.debug('\nFailed: ' + message_text + "\r\n" + str(e) + "\r\n")
 		log.error(traceback.format_exc())
 		bot.send_message(message_text, texts.botErrorText)
 
-@bot.callback_query_handler(func = lambda call: True)
+@bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
 	try:
 		if call.message:
 			log.debug("Callback = " + call.message.text + " " + call.data)
-			messageChatId = call.message.chat.id
-			if not messageChatId in users:
-				users[messageChatId] = Userdata(getUsername(call.message.chat), 0, "", None)
+			message_chat_id = call.message.chat.id
+			if not message_chat_id in users:
+				users[message_chat_id] = Userdata(getUsername(call.message.chat), 0, "", None)
 			if call.data == '/book':
 				initData(call.message.chat)
 				recomendationFunc(call.message)
 			elif call.data == 'wantanotherbook':
-				users[messageChatId].current_samepage_count += 1
+				users[message_chat_id].current_samepage_count += 1
 				showResult(call.message)
 			elif call.data == '/top100':
 				initData(call.message.chat)
@@ -92,28 +93,28 @@ def callback_inline(call):
 			elif call.data.find("top100_goto") >= 0:
 				data = call.data.split('\n')
 				if len(data) == 2:
-					top100indexes[messageChatId] = int(data[1])
+					top100indexes[message_chat_id] = int(data[1])
 					top100Func(call.message)
 				else:
-					top100Result(messageChatId, int(data[1]), int(data[2]))
+					top100Result(message_chat_id, int(data[1]), int(data[2]))
 			elif call.data.find("top100_goback") >= 0:
 				data = call.data.split(' ')
 				if data[1] == '0':
-					top100indexes[messageChatId] = int(data[1])
+					top100indexes[message_chat_id] = int(data[1])
 					startFunc(call.message)
 				else:
-					top100indexes[messageChatId] = int(data[1])
+					top100indexes[message_chat_id] = int(data[1])
 					top100Func(call.message)
 			else:
 				data = call.data.split(' ')
-				if users[messageChatId].request_step != int(data[1]) + 1:
-					users[messageChatId].request_step -= 1
+				if users[message_chat_id].request_step != int(data[1]) + 1:
+					users[message_chat_id].request_step -= 1
 					recomendationFunc(call.message)
 					return
 				if data[0] != 'NONE': #собираем строку запроса
-					users[messageChatId].request_string += data[0]
-				log.debug("Request string = " + str(messageChatId) + " " + users[messageChatId].request_string)
-				if users[messageChatId].request_step >= len(texts.requestStepsArray):
+					users[message_chat_id].request_string += data[0]
+				log.debug("Request string = " + str(message_chat_id) + " " + users[message_chat_id].request_string)
+				if users[message_chat_id].request_step >= len(texts.requestStepsArray):
 					bot.send_message(call.message.chat.id, texts.pleaseWaitText)
 					showResult(call.message)
 					return
