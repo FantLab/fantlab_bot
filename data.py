@@ -58,13 +58,12 @@ def getUsername(chat):
 			result = chat.username
 	return result
 
-def botSendMessage(id, text, **kwargs):
-	if not id in answers or answers[id].answer != text:
-		answers[id] = Answer(text, 1, int(time.time()))
-	if answers[id].count >= WARNING_COUNT and time.time() - answers[id].date <= TIME_DIFF:
+def botSendMessage(chat_id, text, **kwargs):
+	if not chat_id in answers or answers[chat_id].answer != text:
+		answers[chat_id] = Answer(text, 1, int(time.time()))
+	if answers[chat_id].count >= WARNING_COUNT and time.time() - answers[chat_id].date <= TIME_DIFF:
 		return
-	if answers[id].count >= ERROR_COUNT: #TODO: goto start function or just call some telebot function to clear requests
+	if answers[chat_id].count >= ERROR_COUNT:
 		return
-	answers[id].count += 1
-	bot.send_message(id, text, **kwargs)
-
+	answers[chat_id].count += 1
+	bot.send_message(chat_id, text, **kwargs)

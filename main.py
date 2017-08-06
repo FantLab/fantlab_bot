@@ -7,14 +7,14 @@ import time
 import threading
 import requests
 
-from data import bot, Userdata, users, answers, getUsername, top100indexes, botSendMessage
+from data import bot, Userdata, users, answers, getUsername, top100indexes, botSendMessage, Answer
+from authors import authors, show_authors_invite, show_authors_result, stop_authors_request
 from recommendation import initData, startFunc, recomendationFunc, showResult
 from top100 import top100Func, top100Result
 import texts
 from bot_log import log
 import bot_database as db
 
-#FIXME: Если бот выдал 3 одинаковых сообщения подряд, сбросить параметры разговора и вызвать функцию /start.
 #TODO list:
 	#Добиться стабильности работы
 	#Неплохо, если бы вопросы менялись - можно спрашивать: "вам для детей или что-нибудь посерьезнее"
@@ -37,14 +37,14 @@ def start_function(): #init database and load users
 		users[obj[0]] = Userdata(obj[3], obj[1], obj[2], None)
 	res = db.get_answers()
 	for obj in res:
-		answers[obj[0]] = Answer(obj[1], obj[2], obj[3])
+		answers[obj[0]] = Answer(obj[1].encode('utf-8'), obj[2], obj[3])
 
 def save_database():
 	log.debug('Saving database, please wait.')
 	for user in users:
 		db.set_userdata(user, users[user]) #update database
-	for id in answers:
-		db.set_answer(id, answers[id])
+	for answer_id in answers:
+		db.set_answer(answer_id, answers[answer_id])
 	log.debug('Saved!')
 
 def exit_function():
@@ -70,6 +70,10 @@ def message_handler(message):
 		elif message_text == '/top100':
 			initData(message.chat)
 			top100Func(message)
+		elif message_text == '/authors':
+			show_authors_invite(message)
+		elif authors[message_chat_id] == 1:
+			show_authors_result(message)
 		else:
 			startFunc(message)
 	except Exception as e:

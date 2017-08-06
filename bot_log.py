@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import time
+import sys
+
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 class Log:
 	logfile = "log.txt"

@@ -11,6 +11,8 @@ iwantmoreText = "Хочу еще такого же"
 startagainText= "Не, давай по новой"
 pleaseWaitTheSameText = "Хорошо, подбираем еще парочку похожих книг"
 
+AUTHORSREQUESTTEXT = 'Просто напишите имя или фамилию автора (а лучше и то и другое), чтобы получить биографию'
+
 requestStepsArray = [
 	[
 		["Фэнтези", "wg19=on", 0],
