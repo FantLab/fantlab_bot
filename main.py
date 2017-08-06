@@ -7,7 +7,7 @@ import time
 import threading
 import requests
 
-from data import bot, Userdata, users, getUsername, top100indexes
+from data import bot, Userdata, users, answers, getUsername, top100indexes, botSendMessage
 from recommendation import initData, startFunc, recomendationFunc, showResult
 from top100 import top100Func, top100Result
 import texts
@@ -35,11 +35,16 @@ def start_function(): #init database and load users
 	res = db.get_alldata()
 	for obj in res:
 		users[obj[0]] = Userdata(obj[3], obj[1], obj[2], None)
+	res = db.get_answers()
+	for obj in res:
+		answers[obj[0]] = Answer(obj[1], obj[2], obj[3])
 
 def save_database():
 	log.debug('Saving database, please wait.')
 	for user in users:
 		db.set_userdata(user, users[user]) #update database
+	for id in answers:
+		db.set_answer(id, answers[id])
 	log.debug('Saved!')
 
 def exit_function():
@@ -58,7 +63,7 @@ def message_handler(message):
 		if message_text == '/start':
 			startFunc(message)
 		elif message_text == '/help':
-			bot.send_message(message_chat_id, texts.helpText)
+			botSendMessage(message_chat_id, texts.helpText)
 		elif message_text == '/book':
 			initData(message.chat)
 			recomendationFunc(message)
@@ -71,7 +76,7 @@ def message_handler(message):
 		#TODO: forward messages when error happens: bot.forward_message(id, message_chat_id, message.message_id)
 		log.debug('\nFailed: ' + message_text + "\r\n" + str(e) + "\r\n")
 		log.error(traceback.format_exc())
-		bot.send_message(message_text, texts.botErrorText)
+		botSendMessage(message_chat_id, texts.botErrorText)
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
@@ -115,14 +120,14 @@ def callback_inline(call):
 					users[message_chat_id].request_string += data[0]
 				log.debug("Request string = " + str(message_chat_id) + " " + users[message_chat_id].request_string)
 				if users[message_chat_id].request_step >= len(texts.requestStepsArray):
-					bot.send_message(call.message.chat.id, texts.pleaseWaitText)
+					botSendMessage(call.message.chat.id, texts.pleaseWaitText)
 					showResult(call.message)
 					return
 				recomendationFunc(call.message)
 	except Exception as e:
 		log.debug('\nFailed: ' + call.data + "\r\n" + str(e) + "\r\n")
 		log.error(traceback.format_exc())
-		bot.send_message(call.message.chat.id, texts.botErrorText)
+		botSendMessage(call.message.chat.id, texts.botErrorText)
 
 def telegram_polling():
 	while True:
@@ -145,3 +150,4 @@ if __name__ == '__main__':
 	t.daemon = True #to kill this thread when main thread is killed
 	t.start()
 	telegram_polling()
+

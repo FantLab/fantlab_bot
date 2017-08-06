@@ -6,7 +6,7 @@ import urllib2
 from telebot import types
 from BeautifulSoup import BeautifulSoup #pip install BeautifulSoup
 
-from data import bot, Userdata, users, max_samepage_count, requestBasicText, logicalorrequest, allAgeRequest, getUsername, top100indexes
+from data import bot, Userdata, users, max_samepage_count, requestBasicText, logicalorrequest, allAgeRequest, getUsername, top100indexes, botSendMessage
 import texts
 from bot_log import log
 
@@ -23,7 +23,7 @@ def startFunc(message):
 	top100Button = types.InlineKeyboardButton(text = texts.showtop100Text, callback_data = "/top100")
 	keyboard.add(startButton)
 	keyboard.add(top100Button)
-	bot.send_message(messageChatId, texts.startText, reply_markup = keyboard)
+	botSendMessage(messageChatId, texts.startText, reply_markup = keyboard)
 
 def recomendationFunc(message):
 	messageChatId = message.chat.id
@@ -32,7 +32,7 @@ def recomendationFunc(message):
 	keyboard = types.InlineKeyboardMarkup()
 	for i in texts.requestStepsArray[users[messageChatId].request_step]:
 		keyboard.add(types.InlineKeyboardButton(text = i[0], callback_data = i[1] + " " + str(i[2])))
-	bot.send_message(messageChatId, texts.requestNamesArray[users[messageChatId].request_step], reply_markup = keyboard)
+	botSendMessage(messageChatId, texts.requestNamesArray[users[messageChatId].request_step], reply_markup = keyboard)
 	users[messageChatId].request_step += 1
 	
 def getData(request):
@@ -53,7 +53,7 @@ def showResult(message):
 		users[messageChatId] = Userdata(getUsername(message.chat), 0, "", None)
 	flag = False
 	if users[messageChatId].current_samepage_count == max_samepage_count:
-		bot.send_message(message.chat.id, texts.pleaseWaitTheSameText)
+		botSendMessage(message.chat.id, texts.pleaseWaitTheSameText)
 		users[messageChatId].current_samepage_count = 0
 		users[messageChatId].current_page += 1
 		flag = True
@@ -80,4 +80,4 @@ def showResult(message):
 	button2 = types.InlineKeyboardButton(text = texts.startagainText, callback_data = "/book")
 	keyboard.add(button1)
 	keyboard.add(button2)
-	bot.send_message(message.chat.id, result.encode('utf-8'), reply_markup = keyboard, parse_mode="Markdown")
+	botSendMessage(message.chat.id, result.encode('utf-8'), reply_markup = keyboard, parse_mode="Markdown")
