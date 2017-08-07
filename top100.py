@@ -2,7 +2,7 @@
 
 from telebot import types
 
-from data import bot, Userdata, users, getUsername, top100indexes, botSendMessage
+from data import Userdata, users, getUsername, top100indexes, botSendMessage
 import texts
 from texts import top100questions
 

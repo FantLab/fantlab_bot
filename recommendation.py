@@ -23,8 +23,10 @@ def startFunc(message):
 	keyboard = types.InlineKeyboardMarkup()
 	start_button = types.InlineKeyboardButton(text=texts.showRecomendsText, callback_data="/book")
 	top100_button = types.InlineKeyboardButton(text=texts.showtop100Text, callback_data="/top100")
+	authors_button = types.InlineKeyboardButton(text=texts.show_authors, callback_data="/authors")
 	keyboard.add(start_button)
 	keyboard.add(top100_button)
+	keyboard.add(authors_button)
 	botSendMessage(message_chat_id, texts.startText, reply_markup=keyboard)
 
 def recomendationFunc(message):

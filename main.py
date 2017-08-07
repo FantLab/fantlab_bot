@@ -8,7 +8,7 @@ import threading
 import requests
 
 from data import bot, Userdata, users, answers, getUsername, top100indexes, botSendMessage, Answer
-from authors import authors, show_authors_invite, show_authors_result, stop_authors_request
+import authors
 from recommendation import initData, startFunc, recomendationFunc, showResult
 from top100 import top100Func, top100Result
 import texts
@@ -54,8 +54,14 @@ def exit_function():
 start_function()
 atexit.register(exit_function) # call this func on program exit
 
-@bot.message_handler(content_types=["text"])
-def message_handler(message):
+def exception_handler(exception, text, chat_id):
+	#TODO: forward messages when error happens: bot.forward_message(id, message_chat_id, message.message_id)
+	log.debug('\nFailed: ' + text + "\r\n" + str(exception) + "\r\n")
+	log.error(traceback.format_exc())
+	botSendMessage(chat_id, texts.botErrorText)	
+
+@bot.message_handler(commands=['start', 'help', 'book', 'top100', 'authors'])
+def command_handler(message):
 	try:
 		message_chat_id = message.chat.id
 		message_text = message.text
@@ -71,16 +77,22 @@ def message_handler(message):
 			initData(message.chat)
 			top100Func(message)
 		elif message_text == '/authors':
-			show_authors_invite(message)
-		elif authors[message_chat_id] == 1:
-			show_authors_result(message)
+			authors.show_authors_invite(message)
 		else:
 			startFunc(message)
 	except Exception as e:
-		#TODO: forward messages when error happens: bot.forward_message(id, message_chat_id, message.message_id)
-		log.debug('\nFailed: ' + message_text + "\r\n" + str(e) + "\r\n")
-		log.error(traceback.format_exc())
-		botSendMessage(message_chat_id, texts.botErrorText)
+		exception_handler(e, message_text, message_chat_id)
+
+@bot.message_handler(content_types=["text"])
+def message_handler(message):
+	try:
+		message_chat_id = message.chat.id
+		if message_chat_id not in authors.authors or not authors.authors[message_chat_id].is_answering:
+			botSendMessage(message_chat_id, texts.WRONG_COMMAND)
+		elif authors.authors[message_chat_id].is_answering:
+			authors.show_authors_result(message)
+	except Exception as e:
+		exception_handler(e, message.text, message_chat_id)
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
@@ -114,6 +126,16 @@ def callback_inline(call):
 				else:
 					top100indexes[message_chat_id] = int(data[1])
 					top100Func(call.message)
+			elif call.data.find("main_menu") >= 0:
+				startFunc(call.message)
+			elif call.data.find("/authors") >= 0:
+				authors.show_authors_invite(call.message)
+			elif call.data.find("author_again") >= 0:
+				authors.show_authors_invite(call.message)
+			elif call.data.find("author_other") >= 0:
+				authors.next_author_response(message_chat_id)
+			elif call.data.find("author_show") >= 0:
+				pass #TODO: show author info
 			else:
 				data = call.data.split(' ')
 				if users[message_chat_id].request_step != int(data[1]) + 1:
@@ -129,9 +151,7 @@ def callback_inline(call):
 					return
 				recomendationFunc(call.message)
 	except Exception as e:
-		log.debug('\nFailed: ' + call.data + "\r\n" + str(e) + "\r\n")
-		log.error(traceback.format_exc())
-		botSendMessage(call.message.chat.id, texts.botErrorText)
+		exception_handler(e, call.data, call.message.chat.id)
 
 def telegram_polling():
 	while True:
