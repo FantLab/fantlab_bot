@@ -55,6 +55,8 @@ WARNING_COUNT = 3
 ERROR_COUNT = 5
 TIME_DIFF = 3
 
+VARIANTS_INDEXES = {}
+
 bot = telebot.TeleBot(telegram_token.token)
 
 def getUsername(chat):

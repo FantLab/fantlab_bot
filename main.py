@@ -20,7 +20,6 @@ import bot_database as db
 	#Неплохо, если бы вопросы менялись - можно спрашивать: "вам для детей или что-нибудь посерьезнее"
 	#выдача книг только с высокой оценкой, минимальная оценка регулируется пользователем;
 	#оценка книг (+/-) и сокрытие их из выдачи;
-	#поиск по авторам с выдачей биографий;
 	#поиск по названию книги;
 	#более точный жанровый поиск, аналогичный полной версии на сайте;
 	#связь с автором и отправка замечаний и предложений непосредственно самому боту.
@@ -34,7 +33,7 @@ def start_function(): #init database and load users
 	db.init_db()
 	res = db.get_alldata()
 	for obj in res:
-		users[obj[0]] = Userdata(obj[3], obj[1], obj[2], None)
+		users[obj[0]] = Userdata(obj[1], obj[2], obj[3], None)
 	res = db.get_answers()
 	for obj in res:
 		answers[obj[0]] = Answer(obj[1].encode('utf-8'), obj[2], obj[3])
@@ -135,7 +134,8 @@ def callback_inline(call):
 			elif call.data.find("author_other") >= 0:
 				authors.next_author_response(message_chat_id)
 			elif call.data.find("author_show") >= 0:
-				pass #TODO: show author info
+				data = call.data.split('\n')
+				authors.show_author_info(message_chat_id, data[1])
 			else:
 				data = call.data.split(' ')
 				if users[message_chat_id].request_step != int(data[1]) + 1:
