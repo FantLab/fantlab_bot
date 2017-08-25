@@ -3,3 +3,4 @@ telegram_token.py
 *.log
 *.txt
 *.db
+*.sublime-*
