@@ -2,9 +2,9 @@
 
 import random
 import re
-import urllib2
+import urllib
 from telebot import types
-from BeautifulSoup import BeautifulSoup #pip install BeautifulSoup
+from bs4 import BeautifulSoup
 
 from data import Userdata, users, max_samepage_count, requestBasicText, logicalorrequest, allAgeRequest, getUsername, top100indexes, botSendMessage
 import texts
@@ -42,11 +42,11 @@ def recomendationFunc(message):
 def getData(request):
 	request = re.sub("\?&", "?", request)
 	log.debug("Request = " + request)
-	soup = BeautifulSoup(urllib2.urlopen(request).read())
+	soup = BeautifulSoup(urllib.request.urlopen(request).read())
 	table = soup.find('table')
 	if table is None:
 		request += allAgeRequest #add extra request to avoid none data
-		soup = BeautifulSoup(urllib2.urlopen(request).read())
+		soup = BeautifulSoup(urllib.request.urlopen(request).read())
 		table = soup.find('table')
 	rows = table.findAll('tr')
 	return rows

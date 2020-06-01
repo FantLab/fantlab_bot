@@ -3,13 +3,11 @@
 
 ## Install
 
-As superuser:
 ```
-pip install pytelegrambotapi
-pip install BeautifulSoup
+pip3 install -r requirements.txt --user
 ```
 
 ## Run
 ```
-python main.py
+python3 main.py
 ```

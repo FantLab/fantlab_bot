@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-import urllib2
+import urllib
 import urllib
 from telebot import types
 
@@ -21,7 +21,7 @@ def show_authors_invite(message):
 	botSendMessage(message_chat_id, texts.AUTHORSREQUESTTEXT)
 
 def get_json_request(url):
-	result = urllib2.urlopen(url).read()
+	result = urllib.request.urlopen(url).read()
 	return json.loads(result)
 
 def show_authors_result(message):
